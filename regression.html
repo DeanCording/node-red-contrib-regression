@@ -1,0 +1,220 @@
+<script type="text/javascript">
+    RED.nodes.registerType('regression',{
+        category: 'function',
+        color: '#DAB881',
+        defaults: {
+            name: {value:""},
+            dataSetSize: {value: 0, validate: function(v) { return RED.validators.number(v) && (v >= 0); }, required: true},
+            regressionType: {value: "linear", required: true},
+            polynomialOrder: {value: 2, validate: function(v) { return RED.validators.number(v) && (v >= 1); }, required: true},
+            precision: {value: 2, validate: function(v) { return RED.validators.number(v) && (v >= 1); }, required: true},
+            xInputField: {value: "payload.x", required: true},
+            xInputFieldType: {value: "msg"},
+            yInputField: {value: "payload.y", required: true},
+            yInputFieldType: {value: "msg"},
+            yOutputField: {value: "payload.y", required: true},
+            yOutputFieldType: {value: "msg"},
+            functionOutputField: {value: "function", validate: function(v) {
+                return ((v.length > 0) || (this.functionOutputFieldType == 'none'));
+            } },
+            functionOutputFieldType: {value: "none"},
+            resultOnly: {value:true}
+        },
+        inputs:1,
+        outputs:1,
+        icon: "function.png",
+        label: function() {
+            return this.name||"regression";
+        },
+        oneditprepare: function() {
+        
+            var noneType = {value:"none",label:"None",hasValue:false};
+            
+            if (!this.xInputField) {
+                this.xInputFieldType = 'payload.x';
+            }
+            if (!this.xInputFieldType) {
+                this.xInputFieldType = 'msg';
+            }
+            $("#node-input-xInputField").typedInput({
+                default: 'msg',
+                types: ['msg','flow','global'],
+                typeField: $("#node-input-xInputFieldType")
+            });
+
+            if (!this.yInputField) {
+                this.yInputFieldType = 'payload.y';
+            }
+            if (!this.yInputFieldType) {
+                this.yInputFieldType = 'msg';
+            }
+            $("#node-input-yInputField").typedInput({
+                default: 'msg',
+                types: ['msg','flow','global'],
+                typeField: $("#node-input-yInputFieldType")
+            });
+
+            if (!this.yOutputField) {
+                this.yOutputFieldType = 'payload.y';
+            }
+            if (!this.yOutputFieldType) {
+                this.yOutputFieldType = 'msg';
+            }
+            $("#node-input-yOutputField").typedInput({
+                default: 'msg',
+                types: ['msg','flow','global'],
+                typeField: $("#node-input-yOutputFieldType")
+            });
+
+            if (!this.functionOutputField) {
+                this.functionOutputFieldType = 'function';
+            }
+            if (!this.functionOutputFieldType) {
+                this.functionOutputFieldType = 'none';
+            }
+            $("#node-input-functionOutputField").typedInput({
+                default: 'none',
+                types: [noneType,'msg','flow','global'],
+                typeField: $("#node-input-functionOutputFieldType")
+            });
+
+        },
+        oneditsave: function() {
+            this.regressionType = $("#node-input-regressionType").val();
+
+        }
+    });
+</script>
+
+<script type="text/x-red" data-template-name="regression">
+    <div class="form-row">
+        <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+    <div class="form-row">
+        <label for="node-input-regressionType"><i class="icon-tag"></i> Regression Type</label>
+        <select type="text" id="node-input-regressionType">
+            <option value="linear">linear</option>
+            <option value="exponential">exponential</option>
+            <option value="logarithmic">logarithmic</option>
+            <option value="power">power</option>
+            <option value="polynomial">polynomial</option>
+        </select>
+    </div>
+    <div class="form-row">
+        <label for="node-input-polynomialOrder"><i class="icon-tag"></i> Polynomial Order</label>
+        <input type="text" id="node-input-polynomialOrder" placeholder="2">
+    </div>
+    <div class="form-row">
+        <label for="node-input-precision"><i class="icon-tag"></i> Precision</label>
+        <input type="text" id="node-input-precision" placeholder="2">
+    </div>
+    <div class="form-row">
+        <label for="node-input-dataSetSize"><i class="icon-tag"></i> Data Set Size</label>
+        <input type="text" id="node-input-dataSetSize" placeholder="0">
+    </div>
+    <div class="form-row">
+        <label for="node-input-xInputField"><i class="fa fa-edit"></i> X Input Property</label>
+        <input type="text" id="node-input-xInputField" placeholder="X Input" style="width:250px;">
+        <input type="hidden" id="node-input-yInputFieldType">
+    </div>
+    <div class="form-row">
+        <label for="node-input-yInputField"><i class="fa fa-edit"></i> Y Input Property</label>
+        <input type="text" id="node-input-yInputField" placeholder="Y Input" style="width:250px;">
+        <input type="hidden" id="node-input-yInputFieldType">
+    </div>
+    <div class="form-row">
+        <label for="node-input-yOutputField"><i class="fa fa-edit"></i> Y Output Property</label>
+        <input type="text" id="node-input-yOutputField" placeholder="Y Output" style="width:250px;">
+        <input type="hidden" id="node-input-yOutputFieldType">
+    </div>
+    <div class="form-row">
+        <label for="node-input-functionOutputField"><i class="fa fa-edit"></i> Function Output Property</label>
+        <input type="text" id="node-input-functionOutputField" placeholder="Output" style="width:250px;">
+        <input type="hidden" id="node-input-functionOutputFieldType">
+    </div>
+    <div class="form-row">
+        <label for="node-input-resultOnly" style="width: 200px;"><i class="icon-tag"></i> Only output result messages</label>
+        <input type="checkbox" id="node-input-resultOnly" placeholder="Result" style="width: auto;">
+    </div>
+</script>
+
+<script type="text/x-red" data-help-name="regression">
+    <p>Calculates a line equation from a series of [x,y] points or predicts a point given an x value
+    using the linear regression function in the 
+    <a href="https://www.npmjs.com/package/regression">regression-js</a> library.</p>
+
+    <h3>Properties</h3>
+        <dl class="message-properties">
+            <dt>name <span class="property-type">string</span></dt>
+            <dd> the node name to display in the editor. </dd>
+            <dt>regression <span class="property-type">option</span></dt>
+            <dd> the type of regression method to use. </dd>
+            <dt>polynomial order <span class="property-type">integer</span></dt>
+            <dd> the number of polynomial coefficients. </dd>
+            <dt>precision <span class="property-type">integer</span></dt>
+            <dd> the number of significant digits calculated. </dd>
+            <dt>data set size <span class="property-type">integer</span></dt>
+            <dd>maximum number of data elements to store. 0 for unlimited.</dd>
+            <dt>x input property <span class="property-type">property</span></dt>
+            <dd> the property containing the x input value. </dd>
+            <dt>y input property <span class="property-type">property</span></dt>
+            <dd> the property containing the y input value. </dd>
+            <dt>y output property <span class="property-type">property</span></dt>
+            <dd> the property in which the calculated y value will be stored (if requested). </dd>
+            <dt>function output property <span class="property-type">property</span></dt>
+            <dd> the property in which the calculated line equation will be stored (if requested). </dd>
+            <dt>result only<span class="property-type">boolean</span></dt>
+            <dd> if set, messages are only output when a y value is calculated.</dd>
+        </dl>
+
+    <h3>Input</h3>
+        <dl class="message-properties">
+            <dt><i>x input property</i> <span class="property-type">number | array of x,y</span></dt>
+            <dd> the x data item to be added to the data set, or used to calculate y value.</dd>
+            <dt><i>y input property</i> <span class="property-type">number</span></dt>
+            <dd> the data item to be added to the data set.</dd>
+        </dl>
+
+    <h3>Output</h3>
+        <dl class="message-properties">
+            <dt><i>y output property</i> <span class="property-type">float</span></dt>
+            <dd> the value of y calculated from the line equation function.</dd>
+            <dt><i>function output property</i> <span class="property-type">object</span></dt>
+            <dd>
+                <dl class="message-properties">
+                    <dt><i>equation</i><span class="property-type">array</span></dt>
+                    <dd>an array containing the coefficients of the equation</dd>
+                    <dt><i>string</i><span class="property-type">string</span></dt>
+                    <dd>a text representation of the equation</dd>
+                    <dt><i>r2</i><span class="property-type">float</span></dt>
+                    <dd>the coefficient of determination (R<sup>2</sup>)</dd>
+                    <dt><i>predict</i><span class="property-type">function</span></dt>
+                    <dd>a function that implements the equation</dd>
+                </dl>
+            </dd>
+        </dl>
+
+        The contents of input messages are passed through unchanged.
+
+    <h3>Details</h3>
+        <p>If <code>x input property</code> and <code>y input property</code> both contain values then
+        they are saved as a point into the data set.  The <code>x input property</code> may also 
+        contain an array of <code>[x,y]</code> points which will be saved into the data set.  If <code>data set size</code> is greater that 0 then the size of the data set will be
+        limited to the numer of elements specified, with the oldest elements dropped first.</p>
+        
+        <p>Once enough points are stored in the data set, an equation will be generated
+        using linear regression.  This equation can be output to the <code>function output property</code> as an object containing the coefficients of the equation, a text representation of the equation, the coefficient of determination, and a function that implements the equation.</p>
+        
+        <p>For every input containing a value in the <code>x input property</code>, a value for y
+        will be calculated and placed in the <code>y output property</code>.  It is possible to set
+        both <code>y input property</code> and <code>y output property</code> to the same property,
+        in which case the y value input will be used to refine the linear regression and then replace
+        with the calculated y value output.</p>
+        
+        <p>Sending a msg without a <code>x input property</code> value will clear the data set and 
+        the line equation.</p>
+
+
+        
+</script>
